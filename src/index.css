@@ -163,7 +163,7 @@ All colors MUST be HSL.
 .text-muted-foreground {
     color: hsl(var(--muted-foreground));
 } */
-/* 
+
 @layer base {
   * {
     @apply border-border;
@@ -172,4 +172,4 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
-} */
+}
