@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
-import { Button } from "../components/Button"
+import { useSearchParams } from "react-router-dom"
 import Loader from "../components/Loder"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/Table"
 import { cardsRouter } from "../server/api/cards.api"
 import type { Card } from "../server/types"
 
@@ -15,7 +15,6 @@ interface Filters {
 }
 
 export default function Recommendations() {
-  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(true)
   const [recommendations, setRecommendations] = useState<Card[]>([])
@@ -53,13 +52,43 @@ export default function Recommendations() {
   }, [filters.annualSpend])
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-muted/20">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold">Your Recommendations</h1>
-          <p className="text-muted-foreground">Based on your spending profile</p>
+    <div className="min-h-screen p-6 bg-gradient-to-br from-background to-muted/20">
+      <div className="max-w-5xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-xl font-medium">Card Wise</h1>
+          <p className="text-xs text-muted-foreground">Based on your spending profile</p>
         </div>
-        <div className="bg-card/50 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-border/50">
+        
+        <div className="bg-card/50 backdrop-blur-sm p-4 rounded-2xl border border-border/50 mb-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-medium mb-1">Your Filters</h2>
+              <p className="text-xs text-muted-foreground">
+                Annual Spend: {filters.annualSpend 
+                  ? `₹${filters.annualSpend.toLocaleString('en-IN')}` 
+                  : 'Not specified'}
+              </p>
+            </div>
+            <button className="p-2 hover:bg-muted/50 rounded-lg transition-colors">
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="18" 
+                height="18" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                <path d="m15 5 4 4"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="bg-card/50 backdrop-blur-sm p-4 rounded-2xl border border-border/50">
           {isLoading ? (
             <div className="py-12">
               <Loader size="large" className="mb-4" />
@@ -69,94 +98,51 @@ export default function Recommendations() {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="space-y-4">
-                <h2 className="text-xl font-semibold">Your Filters</h2>
-                <div className="bg-muted/30 p-4 rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Annual Spend:</span>
-                    <span className="font-semibold">
-                      {filters.annualSpend 
-                        ? `₹${filters.annualSpend.toLocaleString()}` 
-                        : 'Not specified'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               {recommendations.length === 0 ? (
                 <p className="text-center text-muted-foreground pt-4">
                   No credit card recommendations found based on your filters.
                 </p>
               ) : (
                 <div className="space-y-4">
-                  <h2 className="text-xl font-semibold">
+                  <h2 className="text-base font-medium">
                     Recommended Cards ({recommendations.length})
                   </h2>
-                  <div className="space-y-4">
-                    {recommendations.map((card) => (
-                      <div
-                        key={card.id}
-                        className="bg-muted/30 p-6 rounded-lg border border-border/50 hover:border-primary/50 transition-colors"
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <div>
-                            <h3 className="text-lg font-semibold">{card.name}</h3>
-                            <p className="text-sm text-muted-foreground">{card.issuer}</p>
-                          </div>
-                          <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                            {card.category}
-                          </span>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Annual Fee</p>
-                            <p className="font-semibold">
-                              {card.annualFee === 0 ? 'Free' : `₹${card.annualFee.toLocaleString()}`}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Rewards Rate</p>
-                            <p className="font-semibold">{card.rewardsRate}%</p>
-                          </div>
-                          {card.signUpBonus && (
-                            <div>
-                              <p className="text-xs text-muted-foreground">Sign-up Bonus</p>
-                              <p className="font-semibold">₹{card.signUpBonus.toLocaleString()}</p>
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-xs text-muted-foreground">Min Credit Score</p>
-                            <p className="font-semibold">{card.minCreditScore}</p>
-                          </div>
-                        </div>
-
-                        {card.benefits && card.benefits.length > 0 && (
-                          <div>
-                            <p className="text-xs text-muted-foreground mb-2">Key Benefits</p>
-                            <ul className="text-sm space-y-1">
-                              {card.benefits.slice(0, 3).map((benefit, index) => (
-                                <li key={index} className="flex items-start">
-                                  <span className="text-primary mr-2">•</span>
-                                  <span>{benefit}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Card Name</TableHead>
+                        <TableHead>Issuer</TableHead>
+                        <TableHead>Category</TableHead>
+                        <TableHead className="text-right">Annual Fee</TableHead>
+                        <TableHead className="text-right">Rewards Rate</TableHead>
+                        <TableHead className="text-right">Sign-up Bonus</TableHead>
+                        <TableHead className="text-right">Min Score</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {recommendations.map((card) => (
+                        <TableRow key={card.id}>
+                          <TableCell className="font-medium">{card.name}</TableCell>
+                          <TableCell>{card.issuer}</TableCell>
+                          <TableCell>
+                            <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
+                              {card.category}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {card.annualFee === 0 ? 'Free' : `₹${card.annualFee.toLocaleString()}`}
+                          </TableCell>
+                          <TableCell className="text-right">{card.rewardsRate}%</TableCell>
+                          <TableCell className="text-right">
+                            {card.signUpBonus ? `₹${card.signUpBonus.toLocaleString()}` : '-'}
+                          </TableCell>
+                          <TableCell className="text-right">{card.minCreditScore}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
-
-              <Button 
-                className="w-full mt-6" 
-                onClick={() => navigate('/')}
-                variant="outline"
-              >
-                Back to Home
-              </Button>
             </div>
           )}
         </div>

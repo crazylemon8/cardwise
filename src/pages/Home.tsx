@@ -18,7 +18,7 @@ export default function Home() {
             <div className="space-y-4">
               <div className="flex justify-between items-baseline">
                 <span>Annual Spend</span>
-                <span>₹{annualSpend.toLocaleString()}</span>
+                <span>₹{annualSpend.toLocaleString('en-IN')}</span>
               </div>
               <Slider
                 min={10000}
@@ -30,7 +30,7 @@ export default function Home() {
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>₹10k</span>
-                <span>₹500k</span>
+                <span>₹5L</span>
               </div>
             </div>
             <div>
