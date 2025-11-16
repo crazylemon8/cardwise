@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import Loader from "../components/Loder"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/Table"
-import { cardsRouter } from "../server/api/cards.api"
-import type { Card } from "../server/types"
+import Loader from "../../components/Loder"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/Table"
+import { cardsRouter } from "../../server/api/cards.api"
+import type { Card } from "../../server/types"
 
 // Scalable filter interface for future expansion
 interface Filters {
