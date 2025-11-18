@@ -4,7 +4,7 @@
  */
 
 import { cardsData } from '../cards/cards.data';
-import type { Card, ApiResponse } from '../types';
+import type { CardReadable, ApiResponse } from '../types';
 
 /**
  * Cards Router
@@ -16,7 +16,7 @@ export const cardsRouter = {
    * Get card recommendations
    * TODO: Add filtering logic based on user preferences
    */
-  getRecommendations: async (): Promise<ApiResponse<Card[]>> => {
+  getRecommendations: async (): Promise<ApiResponse<CardReadable[]>> => {
     try {
       // Return random top 5 cards for now
       const shuffled = [...cardsData].sort(() => Math.random() - 0.5);
