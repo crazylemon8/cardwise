@@ -3,28 +3,39 @@ import { useSearchParams } from "react-router-dom"
 import Loader from "../../components/Loder"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/Table"
 import { cardsRouter } from "../../server/api/cards.api"
-import type { Card } from "../../server/types"
+import type { CardWithRewards } from "../../server/types"
 
 // Scalable filter interface for future expansion
 interface Filters {
   annualSpend?: number
-  // Add more filters here as needed, e.g.:
-  // spendingCategory?: string
-  // preferredBanks?: string[]
-  // rewardType?: string
+  groceries?: number
+  dining?: number
+  travel?: number
+  others?: number
 }
 
 export default function Recommendations() {
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(true)
-  const [recommendations, setRecommendations] = useState<Card[]>([])
+  const [recommendations, setRecommendations] = useState<CardWithRewards[]>([])
   
   // Parse filters from URL params - scalable approach
   const filters: Filters = {
     annualSpend: searchParams.get('annualSpend') 
       ? Number(searchParams.get('annualSpend')) 
       : undefined,
-    // Future filters can be parsed here
+    groceries: searchParams.get('groceries')
+      ? Number(searchParams.get('groceries'))
+      : undefined,
+    dining: searchParams.get('dining')
+      ? Number(searchParams.get('dining'))
+      : undefined,
+    travel: searchParams.get('travel')
+      ? Number(searchParams.get('travel'))
+      : undefined,
+    others: searchParams.get('others')
+      ? Number(searchParams.get('others'))
+      : undefined,
   }
 
   // Fetch recommendations from API
@@ -32,7 +43,7 @@ export default function Recommendations() {
     const fetchRecommendations = async () => {
       setIsLoading(true)
       try {
-        const response = await cardsRouter.getRecommendations()
+        const response = await cardsRouter.getRecommendations(filters)
         
         if (response.success && response.data) {
           setRecommendations(response.data)
@@ -49,7 +60,7 @@ export default function Recommendations() {
     }
 
     fetchRecommendations()
-  }, [filters.annualSpend])
+  }, [filters.annualSpend, filters.groceries, filters.dining, filters.travel, filters.others])
 
   return (
     <div className="min-h-screen p-6 bg-gradient-to-br from-background to-muted/20">
@@ -61,13 +72,25 @@ export default function Recommendations() {
         
         <div className="bg-card/50 backdrop-blur-sm p-4 rounded-2xl border border-border/50 mb-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-medium mb-1">Your Filters</h2>
-              <p className="text-xs text-muted-foreground">
-                Annual Spend: {filters.annualSpend 
+            <div className="flex-1">
+              <h2 className="text-base font-medium mb-2">Your Filters</h2>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>Annual Spend: {filters.annualSpend 
                   ? `₹${filters.annualSpend.toLocaleString('en-IN')}` 
-                  : 'Not specified'}
-              </p>
+                  : 'Not specified'}</span>
+                {filters.groceries !== undefined && (
+                  <span>Groceries: ₹{filters.groceries.toLocaleString('en-IN')}</span>
+                )}
+                {filters.dining !== undefined && (
+                  <span>Dining: ₹{filters.dining.toLocaleString('en-IN')}</span>
+                )}
+                {filters.travel !== undefined && (
+                  <span>Travel: ₹{filters.travel.toLocaleString('en-IN')}</span>
+                )}
+                {filters.others !== undefined && (
+                  <span>Others: ₹{filters.others.toLocaleString('en-IN')}</span>
+                )}
+              </div>
             </div>
             <button className="p-2 hover:bg-muted/50 rounded-lg transition-colors">
               <svg 
@@ -112,31 +135,31 @@ export default function Recommendations() {
                       <TableRow>
                         <TableHead>Card Name</TableHead>
                         <TableHead>Issuer</TableHead>
-                        <TableHead>Category</TableHead>
                         <TableHead className="text-right">Annual Fee</TableHead>
-                        <TableHead className="text-right">Rewards Rate</TableHead>
-                        <TableHead className="text-right">Sign-up Bonus</TableHead>
-                        <TableHead className="text-right">Min Score</TableHead>
+                        <TableHead className="text-right">Est. Rewards</TableHead>
+                        <TableHead className="text-right">Welcome Benefit</TableHead>
+                        <TableHead className="text-right">Net Value</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recommendations.map((card) => (
-                        <TableRow key={card.id}>
-                          <TableCell className="font-medium">{card.name}</TableCell>
-                          <TableCell>{card.issuer}</TableCell>
-                          <TableCell>
-                            <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium">
-                              {card.category}
+                      {recommendations.map((rec) => (
+                        <TableRow key={rec.card.id}>
+                          <TableCell className="font-medium">{rec.card.name}</TableCell>
+                          <TableCell>{rec.card.issuer}</TableCell>
+                          <TableCell className="text-right">
+                            {rec.annualFee === 0 ? 'Free' : `₹${rec.annualFee.toLocaleString()}`}
+                          </TableCell>
+                          <TableCell className="text-right text-green-600">
+                            ₹{rec.estimatedRewards.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                          </TableCell>
+                          <TableCell className="text-right text-blue-600">
+                            ₹{rec.welcomeBenefit.toLocaleString()}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            <span className={rec.netValue >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              ₹{rec.netValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                             </span>
                           </TableCell>
-                          <TableCell className="text-right">
-                            {card.annualFee === 0 ? 'Free' : `₹${card.annualFee.toLocaleString()}`}
-                          </TableCell>
-                          <TableCell className="text-right">{card.rewardsRate}%</TableCell>
-                          <TableCell className="text-right">
-                            {card.signUpBonus ? `₹${card.signUpBonus.toLocaleString()}` : '-'}
-                          </TableCell>
-                          <TableCell className="text-right">{card.minCreditScore}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
