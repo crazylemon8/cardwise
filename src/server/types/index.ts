@@ -27,5 +27,13 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+export interface CardWithRewards {
+  card: import('./cards.types').CardReadable;
+  estimatedRewards: number;
+  annualFee: number;
+  netValue: number;
+  welcomeBenefit: number;
+}
+
 // Export card readable types
 export * from './cards.types';

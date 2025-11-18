@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom"
 import Loader from "../../components/Loder"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/Table"
 import { cardsRouter } from "../../server/api/cards.api"
-import type { CardReadable } from "../../server/types"
+import type { CardWithRewards } from "../../server/types"
 
 // Scalable filter interface for future expansion
 interface Filters {
@@ -12,16 +12,12 @@ interface Filters {
   dining?: number
   travel?: number
   others?: number
-  // Add more filters here as needed, e.g.:
-  // spendingCategory?: string
-  // preferredBanks?: string[]
-  // rewardType?: string
 }
 
 export default function Recommendations() {
   const [searchParams] = useSearchParams()
   const [isLoading, setIsLoading] = useState(true)
-  const [recommendations, setRecommendations] = useState<CardReadable[]>([])
+  const [recommendations, setRecommendations] = useState<CardWithRewards[]>([])
   
   // Parse filters from URL params - scalable approach
   const filters: Filters = {
@@ -40,7 +36,6 @@ export default function Recommendations() {
     others: searchParams.get('others')
       ? Number(searchParams.get('others'))
       : undefined,
-    // Future filters can be parsed here
   }
 
   // Fetch recommendations from API
@@ -48,7 +43,7 @@ export default function Recommendations() {
     const fetchRecommendations = async () => {
       setIsLoading(true)
       try {
-        const response = await cardsRouter.getRecommendations()
+        const response = await cardsRouter.getRecommendations(filters)
         
         if (response.success && response.data) {
           setRecommendations(response.data)
@@ -141,35 +136,29 @@ export default function Recommendations() {
                         <TableHead>Card Name</TableHead>
                         <TableHead>Issuer</TableHead>
                         <TableHead className="text-right">Annual Fee</TableHead>
+                        <TableHead className="text-right">Est. Rewards</TableHead>
                         <TableHead className="text-right">Welcome Benefit</TableHead>
-                        <TableHead className="text-right">Travel (Dom)</TableHead>
-                        <TableHead className="text-right">Travel (Intl)</TableHead>
-                        <TableHead className="text-right">Dining</TableHead>
-                        <TableHead className="text-right">FX Markup</TableHead>
+                        <TableHead className="text-right">Net Value</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {recommendations.map((card) => (
-                        <TableRow key={card.id}>
-                          <TableCell className="font-medium">{card.name}</TableCell>
-                          <TableCell>{card.issuer}</TableCell>
+                      {recommendations.map((rec) => (
+                        <TableRow key={rec.card.id}>
+                          <TableCell className="font-medium">{rec.card.name}</TableCell>
+                          <TableCell>{rec.card.issuer}</TableCell>
                           <TableCell className="text-right">
-                            {card.annual_fee === 0 ? 'Free' : `₹${card.annual_fee.toLocaleString()}`}
+                            {rec.annualFee === 0 ? 'Free' : `₹${rec.annualFee.toLocaleString()}`}
                           </TableCell>
-                          <TableCell className="text-right">
-                            ₹{card.welcome_net.toLocaleString()}
+                          <TableCell className="text-right text-green-600">
+                            ₹{rec.estimatedRewards.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                           </TableCell>
-                          <TableCell className="text-right">
-                            {(card.eff_rates.travel_dom * 100).toFixed(1)}%
+                          <TableCell className="text-right text-blue-600">
+                            ₹{rec.welcomeBenefit.toLocaleString()}
                           </TableCell>
-                          <TableCell className="text-right">
-                            {(card.eff_rates.travel_intl * 100).toFixed(1)}%
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {(card.eff_rates.dining * 100).toFixed(1)}%
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {card.fx_markup_pct}%
+                          <TableCell className="text-right font-semibold">
+                            <span className={rec.netValue >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              ₹{rec.netValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </span>
                           </TableCell>
                         </TableRow>
                       ))}
