@@ -29,13 +29,18 @@ export const cardsRouter = {
       
       // If no filters provided, return all cards with zero rewards
       if (!filters || !filters.annualSpend) {
-        const cardsWithZeroRewards = cardsData.map(card => ({
-          card,
-          estimatedRewards: 0,
-          annualFee: card.annual_fee,
-          netValue: card.welcome_net - card.annual_fee,
-          welcomeBenefit: card.welcome_net,
-        }));
+        const cardsWithZeroRewards = cardsData.map(card => {
+          // Calculate renewal benefit even with zero spend
+          const renewalBenefitValue = calculateRenewalBenefit(card, 0);
+          return {
+            card,
+            estimatedRewards: 0,
+            annualFee: card.annual_fee,
+            netValue: card.welcome_net - card.annual_fee,
+            welcomeBenefit: card.welcome_net,
+            subsequentYearValue: 0 - card.annual_fee + renewalBenefitValue,
+          };
+        });
         return {
           success: true,
           data: cardsWithZeroRewards,
@@ -51,20 +56,29 @@ export const cardsRouter = {
           annualFee: card.annual_fee,
           netValue: rewardsData.netValue,
           welcomeBenefit: card.welcome_net,
+          subsequentYearValue: rewardsData.subsequentYearValue,
           score: rewardsData.netValue,
         };
       });
 
-      // Sort by score (highest first)
-      cardsWithScores.sort((a, b) => b.score - a.score);
+      // Sort by subsequentYearValue first (highest first), then by netValue as tiebreaker
+      cardsWithScores.sort((a, b) => {
+        const subsequentDiff = b.subsequentYearValue - a.subsequentYearValue;
+        if (subsequentDiff !== 0) {
+          return subsequentDiff;
+        }
+        // If subsequentYearValue is equal, sort by netValue (first year)
+        return b.netValue - a.netValue;
+      });
 
       // Return top 5 cards with their reward details
-      const top5 = cardsWithScores.slice(0, 5).map(({ card, estimatedRewards, annualFee, netValue, welcomeBenefit }) => ({
+      const top5 = cardsWithScores.slice(0, 5).map(({ card, estimatedRewards, annualFee, netValue, welcomeBenefit, subsequentYearValue }) => ({
         card,
         estimatedRewards,
         annualFee,
         netValue,
         welcomeBenefit,
+        subsequentYearValue,
       }));
 
       return {
@@ -84,11 +98,12 @@ export const cardsRouter = {
  * Calculate the net value (rewards - costs) for a card based on user spending
  * @param card - The card to evaluate
  * @param filters - User's spending patterns
- * @returns Object containing rewards breakdown and net value
+ * @returns Object containing rewards breakdown, net value, and subsequent year value
  */
 function calculateCardValue(card: CardReadable, filters: RecommendationFilters): {
   totalRewards: number;
   netValue: number;
+  subsequentYearValue: number;
 } {
   const {
     groceries = 0,
@@ -132,13 +147,22 @@ function calculateCardValue(card: CardReadable, filters: RecommendationFilters):
     card.post_cap_rates.other
   );
 
-  // Calculate net value: rewards - annual fee + welcome benefit (amortized)
-  // Welcome benefit is typically one-time, so we can consider it as first-year benefit
-  const netValue = totalRewards - card.annual_fee + (card.welcome_net / 1); // Divide by years to amortize
+  // Calculate total annual spend for renewal benefit calculations
+  const totalAnnualSpend = groceries + dining + travel + others;
+
+  // Calculate renewal benefit value
+  const renewalBenefitValue = calculateRenewalBenefit(card, totalAnnualSpend);
+
+  // Calculate net value: rewards - annual fee + welcome benefit (first year)
+  const netValue = totalRewards - card.annual_fee + card.welcome_net;
+
+  // Calculate subsequent year value: rewards - annual fee + renewal benefit
+  const subsequentYearValue = totalRewards - card.annual_fee + renewalBenefitValue;
 
   return {
     totalRewards,
     netValue,
+    subsequentYearValue,
   };
 }
 
@@ -168,6 +192,73 @@ function calculateCategoryRewards(
   const rewardsAfterCap = (spending - cap) * postCapRate;
   
   return rewardsUpToCap + rewardsAfterCap;
+}
+
+/**
+ * Calculate the value of renewal benefits for subsequent years
+ * @param card - The card to evaluate
+ * @param totalAnnualSpend - Total annual spending across all categories
+ * @returns Renewal benefit value in INR
+ */
+function calculateRenewalBenefit(card: CardReadable, totalAnnualSpend: number): number {
+  // If no renewal benefit is defined, return 0
+  if (!card.renewal) {
+    return 0;
+  }
+
+  const renewal = card.renewal;
+
+  // Check if benefit applies (some benefits may not apply in first year, but we're calculating for year 2+)
+  // For subsequent years calculation, we assume the benefit applies
+
+  // Handle fee waiver type
+  if (renewal.type === 'fee_waiver') {
+    // Check if spending threshold is met
+    if (renewal.condition?.annual_spend_threshold) {
+      if (totalAnnualSpend >= renewal.condition.annual_spend_threshold) {
+        // Fee is waived, so the benefit value is the annual fee saved
+        return card.annual_fee;
+      }
+    } else if (renewal.fee_waiver) {
+      // Unconditional fee waiver
+      return card.annual_fee;
+    }
+    return 0;
+  }
+
+  // Handle points/miles type (e.g., Axis Atlas tiered milestones)
+  if (renewal.type === 'points') {
+    // For tiered systems like Atlas, determine the tier based on spend
+    // Atlas tiers: Silver (default), Gold (>=300k), Platinum (>=750k)
+    if (card.id === 'AXIS_ATLAS') {
+      if (totalAnnualSpend >= 750000) {
+        return 10000; // Platinum milestone: 10,000 miles
+      } else if (totalAnnualSpend >= 300000) {
+        return 5000; // Gold milestone: 5,000 miles
+      } else {
+        return 2500; // Silver milestone: 2,500 miles (default)
+      }
+    }
+    
+    // For other cards with points renewal, use the value_in_inr if specified
+    return renewal.value_in_inr || 0;
+  }
+
+  // Handle voucher type
+  if (renewal.type === 'voucher') {
+    // Check if spending threshold is met
+    if (renewal.condition?.annual_spend_threshold) {
+      if (totalAnnualSpend >= renewal.condition.annual_spend_threshold) {
+        return renewal.value_in_inr || 0;
+      }
+    } else {
+      return renewal.value_in_inr || 0;
+    }
+    return 0;
+  }
+
+  // No renewal benefit
+  return 0;
 };
 
 export type CardsRouter = typeof cardsRouter;

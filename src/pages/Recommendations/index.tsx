@@ -134,23 +134,18 @@ export default function Recommendations() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Card Name</TableHead>
-                        <TableHead>Issuer</TableHead>
                         <TableHead className="text-right">Annual Fee</TableHead>
-                        <TableHead className="text-right">Est. Rewards</TableHead>
                         <TableHead className="text-right">Welcome Benefit</TableHead>
-                        <TableHead className="text-right">Net Value</TableHead>
+                        <TableHead className="text-right">Year 1 Value</TableHead>
+                        <TableHead className="text-right">Year 2+ Value</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {recommendations.map((rec) => (
                         <TableRow key={rec.card.id}>
                           <TableCell className="font-medium">{rec.card.name}</TableCell>
-                          <TableCell>{rec.card.issuer}</TableCell>
                           <TableCell className="text-right">
                             {rec.annualFee === 0 ? 'Free' : `₹${rec.annualFee.toLocaleString()}`}
-                          </TableCell>
-                          <TableCell className="text-right text-green-600">
-                            ₹{rec.estimatedRewards.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                           </TableCell>
                           <TableCell className="text-right text-blue-600">
                             ₹{rec.welcomeBenefit.toLocaleString()}
@@ -158,6 +153,11 @@ export default function Recommendations() {
                           <TableCell className="text-right font-semibold">
                             <span className={rec.netValue >= 0 ? 'text-green-600' : 'text-red-600'}>
                               ₹{rec.netValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">
+                            <span className={rec.subsequentYearValue >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              ₹{rec.subsequentYearValue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                             </span>
                           </TableCell>
                         </TableRow>

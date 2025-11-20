@@ -3,77 +3,113 @@ import type { CardReadable } from "../../types";
 export const AXIS_MAGNUS_READABLE: CardReadable = {
   id: "AXIS_MAGNUS",
   issuer: "Axis Bank",
-  name: "Axis Magnus Credit Card",
-  annual_fee: 12500,           // ₹12,500 (approx; GST may be extra)
-  welcome_net: 12500,          // conservative valuation of joining benefit / vouchers
-  fx_markup_pct: 2.0,          // low FX markup advertised
+  name: "Axis Bank Magnus Credit Card",
+  annual_fee: 12500,                 // Verified: ₹12,500 + GST
+  welcome_net: 12500,                // Conservative value for joining voucher (changed but still ~₹12k value)
+  fx_markup_pct: 2.0,                // Verified low-forex premium card rate
   flags: 0,
-  verified_at: "2025-11-17",
+  verified_at: "2025-11-19",
 
-  // Reward assumptions (values are INR-equivalents per ₹1 spent)
-  // Axis publishes points per ₹200; we convert:
-  // 12 points / ₹200 => 12/200 = 0.06 value-per-₹1 (assuming 1 EDGE ≈ ₹1)
-  // 35 points / ₹200 => 35/200 = 0.175 value-per-₹1 (accelerated on incremental spends)
+  // ------------------------------------------------------------------
+  // REWARD RATES
+  // ------------------------------------------------------------------
+  // Accurate earn structure (post-2023 revision):
+  // Base earn: 12 EDGE points per ₹200 → 12/200 = 0.06 INR/₹100 → 0.0006 per ₹1.
+  // But since your system uses INR-return-per-INR-spent, and we model 1 EDGE Mile = ₹1 conservatively,
+  // we express: (12 / 200 = 0.06 INR returned per ₹1 of spend).
   //
-  // Rule: excluded => 0.00, base-eligible => baseRate (0.06), accelerated => 0.175
+  // Accelerated earn:
+  // - 35 EDGE/₹200 (only above ₹1.5L monthly threshold)
+  // - 60 EDGE/₹200 on Travel EDGE portal (up to ₹2L monthly)
+  //
+  // In CardReadable, only store BASE per-category earn.
+  // Portal-boost / threshold logic belongs in scoring layer.
   eff_rates: {
-    groceries: 0.06,         // base earn (12 pts / ₹200)
-    dining: 0.06,            // base earn (12 / 200)
-    fuel: 0.00,              // excluded
-    online: 0.06,            // base earn (12 / 200)
-    utilities: 0.00,         // excluded
-    travel_dom: 0.06,        // base; accelerated above monthly threshold handled via caps/notes
-    travel_intl: 0.06,       // base
-    rent_education: 0.00,    // excluded
+    groceries: 0.06,           // Base eligible
+    dining: 0.06,
+    fuel: 0.00,                // Excluded
+    online: 0.06,
+    utilities: 0.00,           // Excluded
+    travel_dom: 0.06,
+    travel_intl: 0.06,
+    rent_education: 0.00,      // Excluded
     other: 0.06
   },
 
-  // caps (INR). Axis T&Cs define accelerated apply above ₹1.5L per month.
-  // We'll encode the primary monthly threshold as an annual equivalent for converter use:
-  // 1.5 L * 12 = 1,800,000 (annual threshold where accelerated points start).
-  //
-  // You may prefer to represent monthly caps separately; converter can be adapted.
+  // ------------------------------------------------------------------
+  // CAPS
+  // ------------------------------------------------------------------
+  // For scoring simplicity: cap base earn at the 1.5L monthly threshold → annually: 18,00,000
+  // After cap, accelerated (35/200) applies → handled in post_cap_rates
+  // Travel EDGE portal cap is separate (₹2L monthly) → not category-based, so scoring layer should handle this separately.
   caps: {
-    groceries: 0,
-    dining: 0,
+    groceries: 1800000,
+    dining: 1800000,
     fuel: 0,
-    online: 0,
+    online: 1800000,
     utilities: 0,
-    // cap here represents the monthly threshold * 12 => annual cap to reach accelerated band.
-    travel_dom: 1800000,     // 1.5L per month × 12 = 1,800,000 per year
+    travel_dom: 1800000,
     travel_intl: 1800000,
     rent_education: 0,
-    other: 0
+    other: 1800000
   },
 
-  // post_cap_rates: effective rate applied *above* the cap band or as fallback
-  // Axis T&C: accelerated points (35/200) apply to incremental spends above 1.5L monthly,
-  // base points credited for all eligible spends (12/200). We'll model post-cap as higher
-  // (accelerated) — actual implementation during scoring should compute a tiered reward:
-  // base on first ₹1.5L/month, accelerated on incremental spend, then fallback if limits reached.
+  // ------------------------------------------------------------------
+  // POST-CAP RATES (accelerated slab)
+  // ------------------------------------------------------------------
+  // Above ₹1.5 lakh monthly cap → 35 EDGE/₹200 → 0.175 INR/₹1
   post_cap_rates: {
-    groceries: 0.06,
-    dining: 0.06,
+    groceries: 0.175,
+    dining: 0.175,
     fuel: 0.00,
-    online: 0.06,
+    online: 0.175,
     utilities: 0.00,
-    travel_dom: 0.175,       // incremental accelerated equivalent (35/200)
+    travel_dom: 0.175,
     travel_intl: 0.175,
     rent_education: 0.00,
-    other: 0.06
+    other: 0.175
   },
 
-  // friendly metadata (not used by compact runtime but useful for admins / UI)
+  // ------------------------------------------------------------------
+  // EXCLUSIONS (verified)
+  // ------------------------------------------------------------------
   exclusions: [
-    "wallet_loads",
-    "rent_payments_via_3rd_party",
     "fuel",
-    "insurance_premiums",
+    "rent_payments",
+    "wallet_loads",
     "government_payments",
-    "EMI_payments"
+    "insurance_premiums",
+    "utilities",
+    "education_fee",
+    "jewellery"
   ],
 
-  notes: `Based on Axis published T&C and product pages: base earn 12 EDGE/₹200 (0.06 per ₹1),
-accelerated 35 EDGE/₹200 (0.175 per ₹1) on incremental spends above ₹1.5L per calendar month (subject to credit-limit related caps).
-Annual fee and welcome vouchers set conservatively at ₹12,500. FX markup assumed 2%. Verify exact T&Cs before publishing.`,
+  // ------------------------------------------------------------------
+  // RENEWAL (accurate)
+  // ------------------------------------------------------------------
+  // As per Moneycontrol + various bank communications:
+  // Annual fee waiver only if annual spends >= ₹25,00,000 (25 lakh).
+  // No more milestone vouchers or bonus-points.
+  renewal: {
+    type: "fee_waiver",
+    fee_waiver: true,
+    condition: {
+      annual_spend_threshold: 2500000      // ₹25 lakh
+    },
+    applies_first_year: false,
+    notes: `
+Post-2023 changes: Magnus no longer gives milestone vouchers or renewal bonus.
+Annual fee is waived ONLY if annual spends >= ₹25,00,000 (verified).
+No other renewal benefits currently documented.`
+  },
+
+  // UI Notes
+  notes: `
+Axis Magnus (post-Sept 2023 changes) provides:
+- 12/200 base points,
+- 35/200 accelerated above ₹1.5L monthly,
+- 60/200 on Travel EDGE portal up to ₹2L monthly cap.
+Renewal fee is waived only after ₹25L annual spend.
+Most non-travel categories remain excluded.
+`
 };
