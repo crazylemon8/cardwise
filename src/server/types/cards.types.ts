@@ -19,6 +19,36 @@ export interface CategoryRates {
 }
 
 /**
+ * Renewal benefit configuration
+ * Defines fee waivers or benefits at card renewal
+ */
+export interface RenewalBenefit {
+  /** Type of renewal benefit */
+  type: 'fee_waiver' | 'voucher' | 'points' | 'none';
+  
+  /** Whether the annual fee is waived (for fee_waiver type) */
+  fee_waiver?: boolean;
+  
+  /** Number of reward points/miles awarded at renewal (for points type) */
+  points?: number;
+  
+  /** Value of renewal benefit in INR (for vouchers/points, optional for fee_waiver) */
+  value_in_inr?: number;
+  
+  /** Conditions required to receive the benefit */
+  condition?: {
+    /** Minimum annual spend threshold required */
+    annual_spend_threshold?: number;
+  };
+  
+  /** Whether the benefit applies in the first year */
+  applies_first_year: boolean;
+  
+  /** Additional notes about the renewal benefit */
+  notes?: string;
+}
+
+/**
  * Readable card definition containing all card details,
  * reward rates, caps, and metadata
  */
@@ -58,6 +88,9 @@ export interface CardReadable {
   
   /** List of excluded transaction types */
   exclusions?: string[];
+  
+  /** Renewal benefit configuration */
+  renewal?: RenewalBenefit;
   
   /** Additional notes or assumptions about the card */
   notes?: string;
