@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
-import { useSearchParams, Link } from "react-router-dom"
+import { useSearchParams, useNavigate, Link } from "react-router-dom"
 import Loader from "../../components/Loder"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/Table"
 import { cardsRouter } from "../../server/api/cards.api"
 import type { CardWithRewards } from "../../server/types"
+import FilterSummary from "./FilterSummary"
 
 // Scalable filter interface for future expansion
 interface Filters {
@@ -16,11 +17,12 @@ interface Filters {
 
 export default function Recommendations() {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(true)
   const [recommendations, setRecommendations] = useState<CardWithRewards[]>([])
   
   // Parse filters from URL params - scalable approach
-  const filters: Filters = {
+  const [filters, setFilters] = useState<Filters>({
     annualSpend: searchParams.get('annualSpend') 
       ? Number(searchParams.get('annualSpend')) 
       : undefined,
@@ -36,6 +38,21 @@ export default function Recommendations() {
     others: searchParams.get('others')
       ? Number(searchParams.get('others'))
       : undefined,
+  })
+
+  // Handle filter changes
+  const handleFiltersChange = (newFilters: Filters) => {
+    setFilters(newFilters)
+    
+    // Update URL params
+    const params = new URLSearchParams()
+    if (newFilters.annualSpend) params.set('annualSpend', newFilters.annualSpend.toString())
+    if (newFilters.groceries) params.set('groceries', newFilters.groceries.toString())
+    if (newFilters.dining) params.set('dining', newFilters.dining.toString())
+    if (newFilters.travel) params.set('travel', newFilters.travel.toString())
+    if (newFilters.others) params.set('others', newFilters.others.toString())
+    
+    navigate(`/recommendations?${params.toString()}`, { replace: true })
   }
 
   // Fetch recommendations from API
@@ -70,46 +87,7 @@ export default function Recommendations() {
           <p className="text-xs text-muted-foreground">Based on your spending profile</p>
         </div>
         
-        <div className="bg-card/50 backdrop-blur-sm p-4 rounded-2xl border border-border/50 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h2 className="text-base font-medium mb-2">Your Filters</h2>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                <span>Annual Spend: {filters.annualSpend 
-                  ? `₹${filters.annualSpend.toLocaleString('en-IN')}` 
-                  : 'Not specified'}</span>
-                {filters.groceries !== undefined && (
-                  <span>Groceries: ₹{filters.groceries.toLocaleString('en-IN')}</span>
-                )}
-                {filters.dining !== undefined && (
-                  <span>Dining: ₹{filters.dining.toLocaleString('en-IN')}</span>
-                )}
-                {filters.travel !== undefined && (
-                  <span>Travel: ₹{filters.travel.toLocaleString('en-IN')}</span>
-                )}
-                {filters.others !== undefined && (
-                  <span>Others: ₹{filters.others.toLocaleString('en-IN')}</span>
-                )}
-              </div>
-            </div>
-            <button className="p-2 hover:bg-muted/50 rounded-lg transition-colors">
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="18" 
-                height="18" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                <path d="m15 5 4 4"/>
-              </svg>
-            </button>
-          </div>
-        </div>
+        <FilterSummary filters={filters} onFiltersChange={handleFiltersChange} />
 
         <div className="bg-card/50 backdrop-blur-sm p-4 rounded-2xl border border-border/50">
           {isLoading ? (
