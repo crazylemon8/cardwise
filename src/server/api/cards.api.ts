@@ -20,6 +20,33 @@ interface RecommendationFilters {
  */
 export const cardsRouter = {
   /**
+   * GET /api/cards/:id
+   * Get a single card by its ID
+   */
+  getCardById: async (cardId: string): Promise<ApiResponse<CardReadable>> => {
+    try {
+      const card = cardsData.find(c => c.id === cardId);
+      
+      if (!card) {
+        return {
+          success: false,
+          error: 'Card not found',
+        };
+      }
+
+      return {
+        success: true,
+        data: card,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Failed to fetch card',
+      };
+    }
+  },
+
+  /**
    * GET /api/cards/recommendations
    * Get card recommendations based on user filters
    */

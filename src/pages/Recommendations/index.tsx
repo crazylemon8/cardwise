@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, Link } from "react-router-dom"
 import Loader from "../../components/Loder"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/Table"
 import { cardsRouter } from "../../server/api/cards.api"
@@ -142,8 +142,12 @@ export default function Recommendations() {
                     </TableHeader>
                     <TableBody>
                       {recommendations.map((rec) => (
-                        <TableRow key={rec.card.id}>
-                          <TableCell className="font-medium">{rec.card.name}</TableCell>
+                        <TableRow key={rec.card.id} className="cursor-pointer hover:bg-muted/30" onClick={() => window.location.href = `/card/${rec.card.id}`}>
+                          <TableCell className="font-medium">
+                            <Link to={`/card/${rec.card.id}`} className="text-blue-600 hover:underline">
+                              {rec.card.name}
+                            </Link>
+                          </TableCell>
                           <TableCell className="text-right">
                             {rec.annualFee === 0 ? 'Free' : `₹${rec.annualFee.toLocaleString()}`}
                           </TableCell>
