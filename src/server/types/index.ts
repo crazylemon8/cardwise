@@ -33,6 +33,7 @@ export interface CardWithRewards {
   annualFee: number;
   netValue: number;
   welcomeBenefit: number;
+  subsequentYearValue: number;
 }
 
 // Export card readable types
