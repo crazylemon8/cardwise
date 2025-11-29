@@ -4,42 +4,26 @@ import { Slider } from "../components/Slider"
 import { Button } from "../components/Button"
 
 export default function Home() {
-  const [annualSpend, setAnnualSpend] = useState(100000);
   const [groceries, setGroceries] = useState(25000);
   const [dining, setDining] = useState(25000);
   const [travel, setTravel] = useState(25000);
   const [miscellaneous, setMiscellaneous] = useState(25000);
   const navigate = useNavigate();
 
+  const totalSpend = groceries + dining + travel + miscellaneous;
+
   const handleCategoryChange = (category: 'groceries' | 'dining' | 'travel' | 'miscellaneous', value: number) => {
     const newValue = Math.max(0, value);
     
     if (category === 'groceries') {
-      const maxAllowed = annualSpend - dining - travel;
-      const cappedValue = Math.min(newValue, maxAllowed);
-      setGroceries(cappedValue);
-      setMiscellaneous(Math.max(0, annualSpend - cappedValue - dining - travel));
+      setGroceries(newValue);
     } else if (category === 'dining') {
-      const maxAllowed = annualSpend - groceries - travel;
-      const cappedValue = Math.min(newValue, maxAllowed);
-      setDining(cappedValue);
-      setMiscellaneous(Math.max(0, annualSpend - groceries - cappedValue - travel));
+      setDining(newValue);
     } else if (category === 'travel') {
-      const maxAllowed = annualSpend - groceries - dining;
-      const cappedValue = Math.min(newValue, maxAllowed);
-      setTravel(cappedValue);
-      setMiscellaneous(Math.max(0, annualSpend - groceries - dining - cappedValue));
+      setTravel(newValue);
     } else if (category === 'miscellaneous') {
-      const maxAllowed = annualSpend - groceries - dining - travel;
-      const cappedValue = Math.min(newValue, maxAllowed);
-      setMiscellaneous(cappedValue);
+      setMiscellaneous(newValue);
     }
-  };
-
-  const handleAnnualSpendChange = (value: number) => {
-    setAnnualSpend(value);
-    const remaining = value - groceries - dining - travel;
-    setMiscellaneous(Math.max(0, remaining));
   };
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-background to-muted/20">
@@ -50,31 +34,10 @@ export default function Home() {
         </div>
         <div className="bg-card/50 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-border/50">
           <div className="space-y-8">
-            <div className="space-y-4">
-              <div className="flex justify-between items-baseline">
-                <span>Annual Spend</span>
-                <div className="relative border-b border-dotted border-foreground/40 pb-0.5">
-                  <span className="text-muted-foreground">₹</span>
-                  <input
-                    type="number"
-                    value={annualSpend}
-                    onChange={(e) => handleAnnualSpendChange(Number(e.target.value) || 0)}
-                    className="w-auto min-w-[3ch] bg-transparent border-none outline-none text-right focus:border-foreground [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    style={{ width: `${String(annualSpend).length}ch` }}
-                  />
-                </div>
-              </div>
-              <Slider
-                min={10000}
-                max={500000}
-                step={5000}
-                value={[annualSpend]}
-                onValueChange={(value) => handleAnnualSpendChange(value[0])}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>₹10k</span>
-                <span>₹5L</span>
+            <div className="flex justify-end">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground mb-1">Total Annual Spend</p>
+                <p className="text-2xl font-semibold">₹{totalSpend.toLocaleString('en-IN')}</p>
               </div>
             </div>
 
@@ -96,7 +59,7 @@ export default function Home() {
                 </div>
                 <Slider
                   min={0}
-                  max={annualSpend}
+                  max={500000}
                   step={1000}
                   value={[groceries]}
                   onValueChange={(value) => handleCategoryChange('groceries', value[0])}
@@ -121,7 +84,7 @@ export default function Home() {
                 </div>
                 <Slider
                   min={0}
-                  max={annualSpend}
+                  max={500000}
                   step={1000}
                   value={[dining]}
                   onValueChange={(value) => handleCategoryChange('dining', value[0])}
@@ -146,7 +109,7 @@ export default function Home() {
                 </div>
                 <Slider
                   min={0}
-                  max={annualSpend}
+                  max={500000}
                   step={1000}
                   value={[travel]}
                   onValueChange={(value) => handleCategoryChange('travel', value[0])}
@@ -154,18 +117,34 @@ export default function Home() {
                 />
               </div>
 
-              {/* Miscellaneous (calculated) */}
-              <div className="flex justify-between items-center gap-4">
-                <label className="text-sm">Miscellaneous</label>
-                <div className="relative">
-                  <span className="text-muted-foreground text-sm">₹</span>
-                  <span className="text-sm">{miscellaneous.toLocaleString('en-IN')}</span>
+              {/* Miscellaneous */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-baseline">
+                  <label className="text-sm">Miscellaneous</label>
+                  <div className="relative border-b border-dotted border-foreground/40 pb-0.5">
+                    <span className="text-muted-foreground text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={miscellaneous}
+                      onChange={(e) => handleCategoryChange('miscellaneous', Number(e.target.value) || 0)}
+                      className="w-auto min-w-[3ch] bg-transparent border-none outline-none text-right text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      style={{ width: `${String(miscellaneous).length}ch` }}
+                    />
+                  </div>
                 </div>
+                <Slider
+                  min={0}
+                  max={500000}
+                  step={1000}
+                  value={[miscellaneous]}
+                  onValueChange={(value) => handleCategoryChange('miscellaneous', value[0])}
+                  className="w-full"
+                />
               </div>
             </div>
             
             <div>
-              <Button className="w-full" onClick={() => navigate(`/recommendations?annualSpend=${annualSpend}&groceries=${groceries}&dining=${dining}&travel=${travel}&others=${miscellaneous}`)}>Get recommendations</Button>
+              <Button className="w-full" onClick={() => navigate(`/recommendations?groceries=${groceries}&dining=${dining}&travel=${travel}&others=${miscellaneous}`)}>Get recommendations</Button>
             </div>
           </div>
 

@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Slider } from "../../components/Slider"
 
 interface Filters {
   annualSpend?: number
@@ -14,162 +15,166 @@ interface FilterSummaryProps {
 }
 
 export default function FilterSummary({ filters, onFiltersChange }: FilterSummaryProps) {
-  const [isEditing, setIsEditing] = useState(false)
-  const [editedFilters, setEditedFilters] = useState<Filters>(filters)
+  const [groceries, setGroceries] = useState(filters.groceries || 25000)
+  const [dining, setDining] = useState(filters.dining || 25000)
+  const [travel, setTravel] = useState(filters.travel || 25000)
+  const [miscellaneous, setMiscellaneous] = useState(filters.others || 25000)
 
-  const handleEdit = () => {
-    setIsEditing(true)
-    setEditedFilters(filters)
-  }
+  const totalSpend = groceries + dining + travel + miscellaneous
 
-  const handleSave = () => {
-    setIsEditing(false)
-    if (onFiltersChange) {
-      onFiltersChange(editedFilters)
+  // Update local state when filters prop changes
+  useEffect(() => {
+    setGroceries(filters.groceries || 25000)
+    setDining(filters.dining || 25000)
+    setTravel(filters.travel || 25000)
+    setMiscellaneous(filters.others || 25000)
+  }, [filters])
+
+  const handleCategoryChange = (category: 'groceries' | 'dining' | 'travel' | 'miscellaneous', value: number) => {
+    const newValue = Math.max(0, value)
+    
+    if (category === 'groceries') {
+      setGroceries(newValue)
+      notifyChange(newValue, dining, travel, miscellaneous)
+    } else if (category === 'dining') {
+      setDining(newValue)
+      notifyChange(groceries, newValue, travel, miscellaneous)
+    } else if (category === 'travel') {
+      setTravel(newValue)
+      notifyChange(groceries, dining, newValue, miscellaneous)
+    } else if (category === 'miscellaneous') {
+      setMiscellaneous(newValue)
+      notifyChange(groceries, dining, travel, newValue)
     }
   }
 
-  const handleCancel = () => {
-    setIsEditing(false)
-    setEditedFilters(filters)
-  }
-
-  const handleInputChange = (field: keyof Filters, value: string) => {
-    const numValue = value === '' ? undefined : Number(value)
-    setEditedFilters(prev => ({
-      ...prev,
-      [field]: numValue
-    }))
+  const notifyChange = (groc: number, din: number, trav: number, misc: number) => {
+    if (onFiltersChange) {
+      onFiltersChange({
+        groceries: groc,
+        dining: din,
+        travel: trav,
+        others: misc
+      })
+    }
   }
 
   return (
-    <div className="bg-card/50 backdrop-blur-sm p-4 rounded-2xl border border-border/50 mb-6">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-medium">Your Filters</h2>
-        <div className="flex gap-2">
-          {isEditing ? (
-            <>
-              <button 
-                onClick={handleCancel}
-                className="px-3 py-1.5 text-xs hover:bg-muted/50 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSave}
-                className="px-3 py-1.5 text-xs bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
-              >
-                Save
-              </button>
-            </>
-          ) : (
-            <button 
-              onClick={handleEdit}
-              className="p-2 hover:bg-muted/50 rounded-lg transition-colors"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="18" 
-                height="18" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-                <path d="m15 5 4 4"/>
-              </svg>
-            </button>
-          )}
-        </div>
+    <div className="bg-card/50 backdrop-blur-sm p-6 rounded-2xl shadow-lg border border-border/50 lg:sticky lg:top-6">
+      <div className="mb-4 lg:block hidden">
+        <h2 className="text-base font-medium">Filters</h2>
+        <p className="text-xs text-muted-foreground">Adjust your spending profile</p>
       </div>
 
-      {isEditing ? (
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">
-                Annual Spend (₹)
-              </label>
+      <div className="space-y-6">
+        {/* Total Spend Display */}
+        <div className="flex justify-end pb-2 border-b border-border/50">
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground mb-1">Total Annual Spend</p>
+            <p className="text-xl font-semibold">₹{totalSpend.toLocaleString('en-IN')}</p>
+          </div>
+        </div>
+
+        {/* Groceries */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-sm">Groceries</label>
+            <div className="relative border-b border-dotted border-foreground/40 pb-0.5">
+              <span className="text-muted-foreground text-sm">₹</span>
               <input
                 type="number"
-                value={editedFilters.annualSpend ?? ''}
-                onChange={(e) => handleInputChange('annualSpend', e.target.value)}
-                placeholder="Enter amount"
-                className="w-full px-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">
-                Groceries (₹)
-              </label>
-              <input
-                type="number"
-                value={editedFilters.groceries ?? ''}
-                onChange={(e) => handleInputChange('groceries', e.target.value)}
-                placeholder="Enter amount"
-                className="w-full px-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">
-                Dining (₹)
-              </label>
-              <input
-                type="number"
-                value={editedFilters.dining ?? ''}
-                onChange={(e) => handleInputChange('dining', e.target.value)}
-                placeholder="Enter amount"
-                className="w-full px-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">
-                Travel (₹)
-              </label>
-              <input
-                type="number"
-                value={editedFilters.travel ?? ''}
-                onChange={(e) => handleInputChange('travel', e.target.value)}
-                placeholder="Enter amount"
-                className="w-full px-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-muted-foreground mb-1">
-                Others (₹)
-              </label>
-              <input
-                type="number"
-                value={editedFilters.others ?? ''}
-                onChange={(e) => handleInputChange('others', e.target.value)}
-                placeholder="Enter amount"
-                className="w-full px-3 py-1.5 text-sm bg-background border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={groceries}
+                onChange={(e) => handleCategoryChange('groceries', Number(e.target.value) || 0)}
+                className="w-auto min-w-[3ch] bg-transparent border-none outline-none text-right text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                style={{ width: `${String(groceries).length}ch` }}
               />
             </div>
           </div>
+          <Slider
+            min={0}
+            max={500000}
+            step={1000}
+            value={[groceries]}
+            onValueChange={(value) => handleCategoryChange('groceries', value[0])}
+            className="w-full"
+          />
         </div>
-      ) : (
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          <span>Annual Spend: {filters.annualSpend 
-            ? `₹${filters.annualSpend.toLocaleString('en-IN')}` 
-            : 'Not specified'}</span>
-          {filters.groceries !== undefined && (
-            <span>Groceries: ₹{filters.groceries.toLocaleString('en-IN')}</span>
-          )}
-          {filters.dining !== undefined && (
-            <span>Dining: ₹{filters.dining.toLocaleString('en-IN')}</span>
-          )}
-          {filters.travel !== undefined && (
-            <span>Travel: ₹{filters.travel.toLocaleString('en-IN')}</span>
-          )}
-          {filters.others !== undefined && (
-            <span>Others: ₹{filters.others.toLocaleString('en-IN')}</span>
-          )}
+
+        {/* Dining */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-sm">Dining</label>
+            <div className="relative border-b border-dotted border-foreground/40 pb-0.5">
+              <span className="text-muted-foreground text-sm">₹</span>
+              <input
+                type="number"
+                value={dining}
+                onChange={(e) => handleCategoryChange('dining', Number(e.target.value) || 0)}
+                className="w-auto min-w-[3ch] bg-transparent border-none outline-none text-right text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                style={{ width: `${String(dining).length}ch` }}
+              />
+            </div>
+          </div>
+          <Slider
+            min={0}
+            max={500000}
+            step={1000}
+            value={[dining]}
+            onValueChange={(value) => handleCategoryChange('dining', value[0])}
+            className="w-full"
+          />
         </div>
-      )}
+
+        {/* Travel */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-sm">Travel</label>
+            <div className="relative border-b border-dotted border-foreground/40 pb-0.5">
+              <span className="text-muted-foreground text-sm">₹</span>
+              <input
+                type="number"
+                value={travel}
+                onChange={(e) => handleCategoryChange('travel', Number(e.target.value) || 0)}
+                className="w-auto min-w-[3ch] bg-transparent border-none outline-none text-right text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                style={{ width: `${String(travel).length}ch` }}
+              />
+            </div>
+          </div>
+          <Slider
+            min={0}
+            max={500000}
+            step={1000}
+            value={[travel]}
+            onValueChange={(value) => handleCategoryChange('travel', value[0])}
+            className="w-full"
+          />
+        </div>
+
+        {/* Miscellaneous */}
+        <div className="space-y-2">
+          <div className="flex justify-between items-baseline">
+            <label className="text-sm">Miscellaneous</label>
+            <div className="relative border-b border-dotted border-foreground/40 pb-0.5">
+              <span className="text-muted-foreground text-sm">₹</span>
+              <input
+                type="number"
+                value={miscellaneous}
+                onChange={(e) => handleCategoryChange('miscellaneous', Number(e.target.value) || 0)}
+                className="w-auto min-w-[3ch] bg-transparent border-none outline-none text-right text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                style={{ width: `${String(miscellaneous).length}ch` }}
+              />
+            </div>
+          </div>
+          <Slider
+            min={0}
+            max={500000}
+            step={1000}
+            value={[miscellaneous]}
+            onValueChange={(value) => handleCategoryChange('miscellaneous', value[0])}
+            className="w-full"
+          />
+        </div>
+      </div>
     </div>
   )
 }
