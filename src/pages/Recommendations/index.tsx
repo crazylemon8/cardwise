@@ -12,7 +12,6 @@ import FilterSummary from "./FilterSummary"
 
 const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-// Scalable filter interface for future expansion
 interface Filters {
   groceries?: number
   dining?: number
@@ -30,7 +29,7 @@ export default function Recommendations() {
 
   const [cards, setCards] = useState<Array<{ id: string }>>([]);
   
-  // Parse filters from URL params - scalable approach
+  // Parse filters from URL params
   const [filters, setFilters] = useState<Filters>({
     groceries: searchParams.get('groceries')
       ? Number(searchParams.get('groceries'))
@@ -112,6 +111,8 @@ export default function Recommendations() {
   useEffect(() => {
     getCards();
   }, []);
+
+  console.log(cards);
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gradient-to-br from-background to-muted/20">
